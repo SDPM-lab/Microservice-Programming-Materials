@@ -1,2 +1,2 @@
 # Microservice-Programming-Materials
-The simple code of Microservice Programming class.
+請照對應章節與資料夾的 README 進行操作
