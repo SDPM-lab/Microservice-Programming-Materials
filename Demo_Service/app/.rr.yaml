@@ -1,0 +1,39 @@
+version: "2.7"
+
+rpc:
+  listen: tcp://127.0.0.1:6001
+
+server:
+  command: "php Worker.php -f=/app/vendor/monken/codeigniter4-burner/src/FrontLoader.php -a=/app/app/"
+  # env:
+  #   XDEBUG_SESSION: 1
+
+http:
+  address: "0.0.0.0:8080"
+  static:
+    dir: "/app/public"
+    forbid: [".htaccess", ".php"]
+  pool:
+    num_workers: 1
+    # max_jobs: 64
+    # debug: true
+
+# reload:
+#   interval: 1s
+#   patterns: [ ".php" ]
+#   services:
+#     http:
+#       recursive: true
+#       ignore: [ "vendor" ]
+#       patterns: [ ".php", ".go", ".dmd" ]
+#       dirs: [ "/app" ]
+
+# logs:
+#   mode: development
+#   output: stdout
+#   file_logger_options:
+#     log_output: "/app/writable/logs/RoadRunner.log"
+#     max_size: 100
+#     max_age: 1
+#     max_backups : 5
+#     compress: false
