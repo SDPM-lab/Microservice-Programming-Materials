@@ -71,11 +71,6 @@ class CreateOrder extends BaseController
 
     private function defineEachStepAction()
     {
-        /**
-         * User Service port 8080
-         * Produce Service port 8081
-         * Order Service port 8082
-         */
         $produceDetail = [
             [
                 "p_key"  => 1,
@@ -85,12 +80,18 @@ class CreateOrder extends BaseController
         ];
 
         $produceKey   = $produceDetail[0]["p_key"];
-        $orderKey     = 'order_' . random_int(0, 100000000000000000);
+        $orderKey     = md5('order_001' . random_int(0, 100000000000000000) . date('m/d/Y h:i:s a', time()));
         $reduceAmount = $produceDetail[0]["amount"];
         $type         = 'reduce';
         $total        = $produceDetail[0]["price"];
         $userKey      = 1;
 
+        /**
+         * Step 1
+         * Task:     使用者驗證
+         * Service:  User Service 
+         * API Spec: [POST] /api/v1/user/login
+         */
         $this->step1Action = (new Action(
             "http://user-service:8080",
             "POST",
@@ -100,12 +101,24 @@ class CreateOrder extends BaseController
             "password" => "password"
         ])->doneHandler($this->anserDoneHandler());
 
+        /**
+         * Step 2
+         * Task:     取得商品資訊
+         * Service:  Produce Service 
+         * API Spec: [GET] /api/v1/products/{produceKey}
+         */
         $this->step2Action = (new Action(
             "http://production-service:8080",
             "GET",
             "/api/v1/products/$produceKey"
         ))->doneHandler($this->anserDoneHandler());
 
+        /**
+         * Step 3
+         * Task:     商品庫存扣除
+         * Service:  Produce Service 
+         * API Spec: [POST] /api/v1/inventory/reduceInventory
+         */
         $this->step3Action = (new Action(
             "http://production-service:8080",
             "POST",
@@ -117,6 +130,12 @@ class CreateOrder extends BaseController
             "type"         => $type
         ])->doneHandler($this->anserDoneHandler());
 
+        /**
+         * Step 4
+         * Task:     新增訂單
+         * Service:  Order Service 
+         * API Spec: [POST] /api/v1/order
+         */
         $this->step4Action = (new Action(
             "http://order-service:8080",
             "POST",
@@ -128,6 +147,12 @@ class CreateOrder extends BaseController
             "X-User-Key" => $userKey,
         ])->doneHandler($this->anserDoneHandler());
 
+        /**
+         * Step 5
+         * Task:     使用者錢包扣款
+         * Service:  User Service
+         * API Spec: [POST] /api/v1/wallet/charge
+         */
         $this->step5Action = (new Action(
             "http://user-service:8080",
             "POST",

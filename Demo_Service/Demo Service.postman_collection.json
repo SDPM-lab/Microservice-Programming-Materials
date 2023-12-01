@@ -1,0 +1,29 @@
+{
+	"info": {
+		"_postman_id": "4e17bbae-f345-42bd-b2e9-637231acbe7c",
+		"name": "Demo Service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "createOrderByAction",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8084/api/v1/createOrderByAction",
+					"host": [
+						"localhost"
+					],
+					"port": "8084",
+					"path": [
+						"api",
+						"v1",
+						"createOrderByAction"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
