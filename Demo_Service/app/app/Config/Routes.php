@@ -8,3 +8,5 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/', 'Home::index');
 
 $routes->get('/api/v1/createOrderByAction', 'CreateOrder::createOrderByAction');
+
+$routes->get('/api/v1/createOrderByAnser', 'CreateOrder::createOrderByAnser');

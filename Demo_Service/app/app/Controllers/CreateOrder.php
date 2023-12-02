@@ -6,6 +6,9 @@ use App\Controllers\BaseController;
 use CodeIgniter\API\ResponseTrait;
 use \SDPMlab\Anser\Service\Action;
 use \Psr\Http\Message\ResponseInterface;
+use App\Anser\Orchestrators\CreateOrderOrchestrator;
+use App\Anser\Orchestrators\UserLoginOrchestrator;
+use App\Anser\Services\Models\OrderProductDetail;
 
 class CreateOrder extends BaseController
 {
@@ -67,6 +70,35 @@ class CreateOrder extends BaseController
             "status" => "ok",
             "data"   => $this->resultData
         ]);
+    }
+
+    public function createOrderByAnser()
+    {
+        $userLoginOrchestrator = new UserLoginOrchestrator();
+
+        $getUserResult = $userLoginOrchestrator->build("user1@anser.io", "password");
+        
+        $product = [
+            "p_key"  => 1,
+            "price"  => 150,
+            "amount" => 10
+        ];
+
+        $productList = array_map(function ($product) {
+            return new OrderProductDetail(
+                p_key: $product['p_key'],
+                price: $product['price'],
+                amount: $product['amount']
+            );
+        }, [$product]);
+
+        $userKey = $getUserResult["token"];
+
+        $createOrderOrchestrator = new CreateOrderOrchestrator($userKey, $productList);
+
+        $result = $createOrderOrchestrator->build();
+
+        return $this->respond($result);
     }
 
     private function defineEachStepAction()

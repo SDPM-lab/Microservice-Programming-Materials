@@ -52,4 +52,7 @@ Events::on('pre_system', static function () {
             });
         }
     }
+
+    // Load the service config of Anser.
+    require_once APPPATH . 'Anser/Config/ServiceList.php';
 });
