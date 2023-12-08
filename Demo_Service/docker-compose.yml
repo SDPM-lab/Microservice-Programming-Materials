@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+    demo-service:
+        image: webdevops/php:8.1
+        # platform: linux/x86_64
+        networks:
+            - anser_project_network
+        ports:
+            - 8084:8080
+        working_dir: /app
+        environment:
+            - WEB_DOCUMENT_ROOT=/app/public
+            - PHP_MEMORY_LIMIT=2048M
+            - PHP_MAX_EXECUTION_TIME=300
+            - PHP_POST_MAX_SIZE=2048M
+            - PHP_UPLOAD_MAX_FILESIZE=2048M
+        volumes:
+            - './app:/app'
+        # For Mac
+        # command: >
+        #     bash -c "chmod 776 ./start_service.sh && ./start_service.sh"
+        # For Windows
+        command: > 
+            bash -c "chmod 776 ./start_service.sh && sed -i -e 's/\r$$//' ./start_service.sh && ./start_service.sh"
+
+networks:
+    anser_project_network:
+        external: true
