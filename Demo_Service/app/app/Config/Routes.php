@@ -10,3 +10,5 @@ $routes->get('/', 'Home::index');
 $routes->get('/api/v1/createOrderByAction', 'CreateOrder::createOrderByAction');
 
 $routes->get('/api/v1/createOrderByAnser', 'CreateOrder::createOrderByAnser');
+
+$routes->get('/api/v1/createOrderSaga', 'CreateOrder::createOrderSaga');

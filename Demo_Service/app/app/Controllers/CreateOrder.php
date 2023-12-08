@@ -101,6 +101,35 @@ class CreateOrder extends BaseController
         return $this->respond($result);
     }
 
+    public function createOrderSaga()
+    {
+        $userLoginOrchestrator = new UserLoginOrchestrator();
+
+        $getUserResult = $userLoginOrchestrator->build("user1@anser.io", "password");
+
+        $product = [
+            "p_key"  => 1,
+            "price"  => 150,
+            "amount" => 1000000000
+        ];
+
+        $productList = array_map(function ($product) {
+            return new OrderProductDetail(
+                p_key: $product['p_key'],
+                price: $product['price'],
+                amount: $product['amount']
+            );
+        }, [$product]);
+
+        $userKey = $getUserResult["token"];
+
+        $createOrderOrchestrator = new CreateOrderOrchestrator($userKey, $productList);
+
+        $result = $createOrderOrchestrator->build();
+
+        return $this->respond($result);
+    }
+
     private function defineEachStepAction()
     {
         $produceDetail = [
@@ -112,7 +141,8 @@ class CreateOrder extends BaseController
         ];
 
         $produceKey   = $produceDetail[0]["p_key"];
-        $orderKey     = md5('order_001' . random_int(0, 100000000000000000) . date('m/d/Y h:i:s a', time()));
+        $orderKey     = 1;
+        // $orderKey     = md5('order_001' . random_int(0, 100000000000000000) . date('m/d/Y h:i:s a', time()));
         $reduceAmount = $produceDetail[0]["amount"];
         $type         = 'reduce';
         $total        = $produceDetail[0]["price"];

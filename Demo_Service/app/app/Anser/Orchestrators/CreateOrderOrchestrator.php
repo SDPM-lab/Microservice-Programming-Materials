@@ -7,6 +7,7 @@ use App\Anser\Services\OrderService;
 use App\Anser\Services\ProductionService;
 use App\Anser\Services\UserService;
 use App\Anser\Services\Models\OrderProductDetail;
+use App\Anser\Orchestrators\Sagas\CreateOrderSaga;
 
 class CreateOrderOrchestrator extends Orchestrator
 {
@@ -61,8 +62,10 @@ class CreateOrderOrchestrator extends Orchestrator
             );
         }
 
+        $this->transStart(transactionClass: CreateOrderSaga::class);
+
         //Step2 扣商品庫存
-        $step2 = $this->setStep();
+        $step2 = $this->setStep()->setCompensationMethod('rollbackInventory');
         foreach ($this->orderProducts as $index => $orderProduct) {
             $step2->addAction(
                 alias: 'product_' . ($orderProduct->p_key) . '_reduceInventory',
@@ -71,27 +74,31 @@ class CreateOrderOrchestrator extends Orchestrator
         }
 
         //Step3 建立訂單（將會取得訂單總價 total）
-        $this->setStep()->addAction(
-            alias: 'createOrder',
-            action: static function (CreateOrderOrchestrator $runtimeOrch) {
-                $userKey = $runtimeOrch->getStepAction('userInfo')->getMeaningData()['data']['u_key'];
-                //將最新商品售價更新至訂單資訊
-                foreach ($runtimeOrch->orderProducts as &$product) {
-                    $product->price = (int)$runtimeOrch->getStepAction('product_' . $product->p_key)->getMeaningData()['data']['price'];
+        $this->setStep()->setCompensationMethod('rollbackOrder')
+            ->addAction(
+                alias: 'createOrder',
+                action: static function (CreateOrderOrchestrator $runtimeOrch) {
+                    $userKey = $runtimeOrch->getStepAction('userInfo')->getMeaningData()['data']['u_key'];
+                    //將最新商品售價更新至訂單資訊
+                    foreach ($runtimeOrch->orderProducts as &$product) {
+                        $product->price = (int)$runtimeOrch->getStepAction('product_' . $product->p_key)->getMeaningData()['data']['price'];
+                    }
+                    return $runtimeOrch->orderService->createOrderAction($userKey, $runtimeOrch->orderId, $runtimeOrch->orderProducts);
                 }
-                return $runtimeOrch->orderService->createOrderAction($userKey, $runtimeOrch->orderId, $runtimeOrch->orderProducts);
-            }
-        );
+            );
 
         //Step4 使用者錢包扣款
-        $this->setStep()->addAction(
-            alias: 'walletCharge',
-            action: static function (CreateOrderOrchestrator $runtimeOrch) {
-                $userKey = $runtimeOrch->getStepAction('userInfo')->getMeaningData()['data']['u_key'];
-                $total = $runtimeOrch->getStepAction('createOrder')->getMeaningData()['total'];
-                return $runtimeOrch->userService->walletChargeAction($userKey, $runtimeOrch->orderId, $total);
-            }
-        );
+        $this->setStep()->setCompensationMethod('rollbackUserWalletCharge')
+            ->addAction(
+                alias: 'walletCharge',
+                action: static function (CreateOrderOrchestrator $runtimeOrch) {
+                    $userKey = $runtimeOrch->getStepAction('userInfo')->getMeaningData()['data']['u_key'];
+                    $total = $runtimeOrch->getStepAction('createOrder')->getMeaningData()['total'];
+                    return $runtimeOrch->userService->walletChargeAction($userKey, $runtimeOrch->orderId, $total);
+                }
+            );
+
+        $this->transEnd();
     }
 
     protected function defineResult(): array
@@ -123,7 +130,6 @@ class CreateOrderOrchestrator extends Orchestrator
             "data" => [
                 "order_id" => $this->orderId,
                 "fail_messages" => $failMessages,
-                "fail_Action"   => $this->getFailActions()
             ]
         ];
         return $data;
